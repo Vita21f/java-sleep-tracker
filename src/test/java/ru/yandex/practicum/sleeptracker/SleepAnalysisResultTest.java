@@ -1,10 +1,12 @@
 package ru.yandex.practicum.sleeptracker;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SleepAnalysisResultTest {
+
     @Test
     void constructor_setsDescriptionAndResultCorrectly() {
         String description = "Тестовый анализ";

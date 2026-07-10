@@ -19,6 +19,7 @@ public class DataOfSleepingSessionsLoaderTest {
         assertFalse(sessions.isEmpty());
         assertEquals(13, sessions.size());
     }
+
     @Test
     void testSortingInCorrect() throws IOException {
         List<SleepingSession> sessions = loader.getListOfSleepingSessions(TEST_FILE);
@@ -31,6 +32,7 @@ public class DataOfSleepingSessionsLoaderTest {
             );
         }
     }
+
     @Test
     void testFileNotFound() {
         String nonexistentFile = "nonexistent.txt";
@@ -39,6 +41,4 @@ public class DataOfSleepingSessionsLoaderTest {
             loader.getListOfSleepingSessions(nonexistentFile);
         });
     }
-
-
 }
