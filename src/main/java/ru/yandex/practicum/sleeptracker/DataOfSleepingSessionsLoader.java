@@ -2,6 +2,8 @@ package ru.yandex.practicum.sleeptracker;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -10,28 +12,33 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DataOfSleepingSessionsLoader {
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
 
     public List<SleepingSession> getListOfSleepingSessions(String fileName) throws IOException {
-        try (InputStream inputStream = getClass().getResourceAsStream("/" + fileName)) {
-            if (inputStream == null) {
-                System.err.println("Файл не найден в ресурсах: " + fileName);
-                throw new FileNotFoundException("Файл не найден в ресурсах: " + fileName);
-            }
+        try (InputStream inputStream = openStream(fileName)) {
             try (BufferedReader br = new BufferedReader(
                     new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-                List<SleepingSession> sessions = br.lines()
+                return br.lines()
                         .filter(line -> !line.isBlank())
                         .map(line -> line.split(";"))
                         .map(this::parseLine)
-                        .sorted(Comparator.comparing(sleepingSession -> sleepingSession.getFallingAsleep()))
+                        .sorted(Comparator.comparing(SleepingSession::getFallingAsleep))
                         .collect(Collectors.toList());
-                return sessions;
-            } catch (IOException e) {
-                System.err.println("Ошибка при чтении файла " + fileName + ": " + e.getMessage());
-                return List.of();
             }
         }
+    }
+
+    private InputStream openStream(String fileName) throws IOException {
+        Path path = Path.of(fileName);
+        if (Files.exists(path)) {
+            return Files.newInputStream(path);
+        }
+        InputStream fromResources =
+                getClass().getResourceAsStream("/" + fileName);
+        if (fromResources == null) {
+            throw new FileNotFoundException("Файл не найден: " + fileName);
+        }
+        return fromResources;
     }
 
     private SleepingSession parseLine(String[] line) {
@@ -44,5 +51,5 @@ public class DataOfSleepingSessionsLoader {
             System.err.println("Некорректные данные в строке: " + String.join(";", line));
             throw e;
         }
-        }
+    }
 }

@@ -1,44 +1,73 @@
 package ru.yandex.practicum.sleeptracker;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DataOfSleepingSessionsLoaderTest {
     private final DataOfSleepingSessionsLoader loader = new DataOfSleepingSessionsLoader();
-    private static final String TEST_FILE = "sleep_log.txt";
 
-    @Test
-    void testLoadValidFile() throws IOException {
-        List<SleepingSession> sessions = loader.getListOfSleepingSessions(TEST_FILE);
-
-        assertNotNull(sessions);
-        assertFalse(sessions.isEmpty());
-        assertEquals(13, sessions.size());
+    private Path writeFile(Path tempDir, String... lines) throws IOException {
+        Path file = tempDir.resolve("sleep_log.txt");
+        Files.write(file, List.of(lines));
+        return file;
     }
 
     @Test
-    void testSortingInCorrect() throws IOException {
-        List<SleepingSession> sessions = loader.getListOfSleepingSessions(TEST_FILE);
+    void loadValidFileReturnsAllSessions(@TempDir Path tempDir) throws IOException {
+        Path file = writeFile(tempDir,
+                "01.10.25 23:15;02.10.25 07:30;GOOD",
+                "02.10.25 23:50;03.10.25 06:40;NORMAL");
 
-        for (int i = 0; i < sessions.size() - 1; i++) {
-            assertTrue(
-                    sessions.get(i).getFallingAsleep()
-                            .isBefore((sessions.get(i + 1).getFallingAsleep())
-                            ), "Сессии должны быть отсортированы по времени засыпания"
-            );
-        }
+        List<SleepingSession> sessions = loader.getListOfSleepingSessions(file.toString());
+
+        assertEquals(2, sessions.size());
     }
 
     @Test
-    void testFileNotFound() {
-        String nonexistentFile = "nonexistent.txt";
+    void sessionsAreSortedByFallingAsleep(@TempDir Path tempDir) throws IOException {
+        Path file = writeFile(tempDir,
+                "05.10.25 23:00;06.10.25 07:00;GOOD",      // нарочно в обратном
+                "01.10.25 23:15;02.10.25 07:30;NORMAL");   // порядке!
 
-        assertThrows(FileNotFoundException.class, () -> {
-            loader.getListOfSleepingSessions(nonexistentFile);
-        });
+        List<SleepingSession> sessions = loader.getListOfSleepingSessions(file.toString());
+
+        assertTrue(sessions.get(0).getFallingAsleep()
+                        .isBefore(sessions.get(1).getFallingAsleep()),
+                "Сессии должны быть отсортированы по времени засыпания");
+    }
+
+    @Test
+    void blankLinesAreSkipped(@TempDir Path tempDir) throws IOException {
+        Path file = writeFile(tempDir,
+                "01.10.25 23:15;02.10.25 07:30;GOOD",
+                "",
+                "02.10.25 23:50;03.10.25 06:40;NORMAL");
+
+        List<SleepingSession> sessions = loader.getListOfSleepingSessions(file.toString());
+
+        assertEquals(2, sessions.size());
+    }
+
+    @Test
+    void missingFileThrowsFileNotFound() {
+        assertThrows(FileNotFoundException.class,
+                () -> loader.getListOfSleepingSessions("nonexistent.txt"));
+    }
+
+    @Test
+    void invalidDataThrowsException(@TempDir Path tempDir) throws IOException {
+        Path file = writeFile(tempDir,
+                "это не дата;тоже не дата;GOOD");
+
+        assertThrows(Exception.class,
+                () -> loader.getListOfSleepingSessions(file.toString()));
     }
 }
