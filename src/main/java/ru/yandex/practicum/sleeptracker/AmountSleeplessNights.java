@@ -8,13 +8,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
-public class AmountSleeplessNights implements Function<List<SleepingSession>, SleepAnalysisResult> {
+public class AmountSleeplessNights implements Function<List<SleepingSession>, SleepAnalysisResult<Long>> {
     private static final String DESCRIPTION = "Количество бессонных ночей";
 
     @Override
-    public SleepAnalysisResult apply(List<SleepingSession> sessions) {
+    public SleepAnalysisResult<Long> apply(List<SleepingSession> sessions) {
         if (sessions.isEmpty()) {
-            return new SleepAnalysisResult(DESCRIPTION, 0L);
+            return new SleepAnalysisResult<>(DESCRIPTION, 0L);
         }
 
         LocalDateTime loggingStart = sessions.stream()
@@ -36,13 +36,13 @@ public class AmountSleeplessNights implements Function<List<SleepingSession>, Sl
         long totalNights = ChronoUnit.DAYS.between(firstNight, lastNight.plusDays(1));
 
         if (totalNights <= 0) {
-            return new SleepAnalysisResult(DESCRIPTION, 0L);
+            return new SleepAnalysisResult<>(DESCRIPTION, 0L);
         }
 
         long sleptNights = sessions.stream()
                 .flatMap(NightsUtil::coveredNights)
                 .distinct()
                 .count();
-        return new SleepAnalysisResult(DESCRIPTION, totalNights - sleptNights);
+        return new SleepAnalysisResult<>(DESCRIPTION, totalNights - sleptNights);
     }
 }

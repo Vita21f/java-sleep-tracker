@@ -4,11 +4,11 @@ import java.time.Duration;
 import java.util.List;
 import java.util.function.Function;
 
-public class AverageSessionDuration implements Function<List<SleepingSession>, SleepAnalysisResult> {
+public class AverageSessionDuration implements Function<List<SleepingSession>, SleepAnalysisResult<Long>> {
     @Override
-    public SleepAnalysisResult apply(List<SleepingSession> sessions) {
+    public SleepAnalysisResult<Long> apply(List<SleepingSession> sessions) {
         if (sessions.isEmpty()) {
-            return new SleepAnalysisResult("Средняя продолжительность сессии (в минутах)", 0L);
+            return new SleepAnalysisResult<>("Средняя продолжительность сессии (в минутах)", 0L);
         }
 
         Duration totalDuration = sessions.stream()
@@ -17,6 +17,6 @@ public class AverageSessionDuration implements Function<List<SleepingSession>, S
 
         long averageMinutes = totalDuration.dividedBy(sessions.size()).toMinutes();
 
-        return new SleepAnalysisResult("Средняя продолжительность сессии (в минутах)", averageMinutes);
+        return new SleepAnalysisResult<>("Средняя продолжительность сессии (в минутах)", averageMinutes);
     }
 }

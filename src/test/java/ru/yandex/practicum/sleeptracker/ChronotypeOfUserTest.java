@@ -69,4 +69,12 @@ public class ChronotypeOfUserTest {
         assertEquals(OWL, getChronotype(
                 session("04.10.25 00:50", "04.10.25 14:00")));
     }
+
+    @Test
+    void multiNightSessionVotesForEachNight() {
+        assertEquals(OWL, getChronotype(
+                session("01.10.25 23:30", "03.10.25 09:30"),
+                session("04.10.25 21:00", "05.10.25 06:30")
+        ));
+    }
 }

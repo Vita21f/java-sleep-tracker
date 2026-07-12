@@ -1,12 +1,13 @@
 package ru.yandex.practicum.sleeptracker;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
 public class SleepTrackerApp {
-    private final List<Function<List<SleepingSession>, SleepAnalysisResult>> functions;
+    private final List<Function<List<SleepingSession>, ? extends SleepAnalysisResult<?>>> functions;
 
     public SleepTrackerApp() {
         functions = new ArrayList<>();
@@ -31,17 +32,25 @@ public class SleepTrackerApp {
             System.out.println("=== АНАЛИЗ ДАННЫХ О СНЕ ===");
 
             functions.forEach(function -> {
-                SleepAnalysisResult result = function.apply(sessions);
+                SleepAnalysisResult<?> result = function.apply(sessions);
                 System.out.println(result);
             });
+        } catch (FileNotFoundException e) {
+            System.err.println(e.getMessage());
         } catch (IOException e) {
-            System.err.println("Ошибка при работе с файлом: " + e.getMessage());
+            System.err.println("Ошибка при чтении файла: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.err.println("Ошибка в данных файла: " + e.getMessage());
         }
     }
 
     public static void main(String[] args) {
+        if (args.length == 0) {
+            System.err.println("Укажите путь к файлу с логом сна: java SleepTrackerApp <путь>");
+            return;
+        }
         SleepTrackerApp app = new SleepTrackerApp();
-        app.runAnalysis("sleep_log.txt");
+        app.runAnalysis(args[0]);
     }
 }
 

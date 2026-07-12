@@ -12,19 +12,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DataOfSleepingSessionsLoader {
+    private static final int EXPECTED_COLUMNS = 3;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
 
     public List<SleepingSession> getListOfSleepingSessions(String fileName) throws IOException {
-        try (InputStream inputStream = openStream(fileName)) {
-            try (BufferedReader br = new BufferedReader(
+        try (InputStream inputStream = openStream(fileName);
+            BufferedReader br = new BufferedReader(
                     new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                 return br.lines()
                         .filter(line -> !line.isBlank())
-                        .map(line -> line.split(";"))
                         .map(this::parseLine)
                         .sorted(Comparator.comparing(SleepingSession::getFallingAsleep))
                         .collect(Collectors.toList());
-            }
         }
     }
 
@@ -41,15 +40,39 @@ public class DataOfSleepingSessionsLoader {
         return fromResources;
     }
 
-    private SleepingSession parseLine(String[] line) {
+    private SleepingSession parseLine(String line) {
+        String[] parts = line.split(";");
+        if (parts.length < EXPECTED_COLUMNS) {
+            throw new IllegalArgumentException(
+                    "Недостаточно данных в строке (ожидается " + EXPECTED_COLUMNS
+                            + " столбца" + line);
+        }
+
+        LocalDateTime fallingAsleep = parseDateTime(parts[0], line);
+        LocalDateTime awakening = parseDateTime(parts[1], line);
+        if (!awakening.isAfter(fallingAsleep)) {
+            throw new IllegalArgumentException(
+                    "Пробуждение должно быть позже засыпания: " + line);
+        }
+
+        SleepQuality quality = parseQuality(parts[2], line);
+
+        return new SleepingSession(fallingAsleep, awakening, quality);
+    }
+
+    private LocalDateTime parseDateTime(String value, String line) {
         try {
-            LocalDateTime dt1 = LocalDateTime.parse(line[0], formatter);
-            LocalDateTime dt2 = LocalDateTime.parse(line[1], formatter);
-            SleepQuality enumValue = SleepQuality.valueOf(line[2].toUpperCase().trim());
-            return new SleepingSession(dt1, dt2, enumValue);
-        } catch (DateTimeParseException | IllegalArgumentException e) {
-            System.err.println("Некорректные данные в строке: " + String.join(";", line));
-            throw e;
+            return LocalDateTime.parse(value.trim(), formatter);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Некорректная дата в строке: " + line, e);
+        }
+    }
+
+    private SleepQuality parseQuality(String value, String line) {
+        try {
+            return SleepQuality.valueOf(value.toUpperCase().trim());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Неизвестное качество сна в строке: " + line, e);
         }
     }
 }

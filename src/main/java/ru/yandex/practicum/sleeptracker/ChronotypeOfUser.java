@@ -6,17 +6,18 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class ChronotypeOfUser implements Function<List<SleepingSession>, SleepAnalysisResult> {
+public class ChronotypeOfUser
+        implements Function<List<SleepingSession>, SleepAnalysisResult<Chronotype>> {
     private static final LocalTime OWL_ASLEEP_AFTER = LocalTime.of(23, 0);
     private static final LocalTime OWL_AWAKE_AFTER = LocalTime.of(9, 0);
     private static final LocalTime LARK_ASLEEP_BEFORE = LocalTime.of(22, 0);
     private static final LocalTime LARK_AWAKE_BEFORE = LocalTime.of(7, 0);
 
     @Override
-    public SleepAnalysisResult apply(List<SleepingSession> sessions) {
+    public SleepAnalysisResult<Chronotype> apply(List<SleepingSession> sessions) {
         Map<Chronotype, Long> counts = sessions.stream()
-                .filter(session -> NightsUtil.coveredNights(session).findAny().isPresent())
-                .map(this::classify)
+                .flatMap(session -> NightsUtil.coveredNights(session)
+                    .map(night -> classify(session)))
                 .collect(Collectors.groupingBy(
                         Function.identity(),
                         Collectors.counting()));
@@ -34,7 +35,7 @@ public class ChronotypeOfUser implements Function<List<SleepingSession>, SleepAn
             userType = Chronotype.DOVE;
         }
 
-        return new SleepAnalysisResult("Хронотип пользователя", userType);
+        return new SleepAnalysisResult<>("Хронотип пользователя", userType);
     }
 
     private Chronotype classify(SleepingSession session) {
